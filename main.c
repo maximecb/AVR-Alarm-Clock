@@ -315,8 +315,8 @@ void mainView(uint16_t keys)
 
     switch (secCount / 4 % 3)
     {
-        case 0: fprintf(lcd, "A: alarm on/off    \n"); break;
-        case 1: fprintf(lcd, "B: set alarm time  \n"); break;
+        case 0: fprintf(lcd, "A: alarm on/off\n"); break;
+        case 1: fprintf(lcd, "B: set alarm time\n"); break;
         case 2: fprintf(lcd, "C: set current time\n"); break;
     }
 

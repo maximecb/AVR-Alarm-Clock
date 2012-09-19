@@ -23,7 +23,8 @@ MAKE_OUTPUT(KEY_OUT, C, 0, 4)
 MAKE_INPUT(KEY_IN, C, 4, 4)
 
 // LCD screen configuration
-#define LCD_NUM_LINES 4
+#define LCD_LINE_COUNT 4
+#define LCD_LINE_LENGTH 20
 MAKE_OUTPUT(LCD_RS, A, 0, 1)
 MAKE_OUTPUT(LCD_RW, A, 1, 1)
 MAKE_OUTPUT(LCD_E, A, 2, 1)

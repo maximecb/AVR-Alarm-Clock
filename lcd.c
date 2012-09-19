@@ -9,10 +9,12 @@
 // LCD interface code (HD44780-compatible)
 //=============================================================================
 
-#define LCD_LINE_0_START 0x00
-#define LCD_LINE_1_START 0x40
-#define LCD_LINE_2_START 0x14
-#define LCD_LINE_3_START 0x54
+const uint8_t LCD_LINE_START[] = {
+    0x00,
+    0x40,
+    0x14,
+    0x54
+};
 
 void lcd_write4(uint8_t rs, uint8_t db)
 {
@@ -115,47 +117,6 @@ void lcd_clear()
     lcd_command(0, 0b00000001);
 }
 
-int lcd_line_no = 0;
-
-void lcd_set_line(int lineNo)
-{
-    // Display data ram is 80 x 8 bits
-    // 20 chars per line, 4 lines
-
-    uint8_t address;
-
-    switch (lineNo)
-    {
-        case 0: address = LCD_LINE_0_START; break;
-        case 1: address = LCD_LINE_1_START; break;
-        case 2: address = LCD_LINE_2_START; break;
-        case 3: address = LCD_LINE_3_START; break;
-        default: address = LCD_LINE_0_START; break;
-    }
-    
-    lcd_line_no = lineNo;
-
-    // Set the cursor position (DDRAM address)
-    lcd_command(0, 128 + address);
-}
-
-int lcd_putchar(char c, FILE* stream)
-{
-    if (c == '\n')
-    {
-        if (lcd_line_no >= LCD_NUM_LINES - 1)
-            lcd_set_line(0);
-        else
-            lcd_set_line(lcd_line_no + 1);  
-    }
-    else
-    {
-        lcd_command(1, c);
-    }
-
-    return 0;
-}
-
 bool lcd_ping()
 {
     // Read the address counter
@@ -171,6 +132,44 @@ bool lcd_ping()
     lcd_command(0, 0x10);
 
     return (ac2 == ac1 + 1);
+}
+
+// Current line and character number
+int lcd_line_no = 0;
+int lcd_char_no = 0;
+
+void lcd_set_line(int lineNo)
+{
+    // Display data ram is 80 x 8 bits
+    // 20 chars per line, 4 lines
+
+    uint8_t address = LCD_LINE_START[lineNo];
+    
+    lcd_line_no = lineNo;
+    lcd_char_no = 0;
+
+    // Set the cursor position (DDRAM address)
+    lcd_command(0, 128 + address);
+}
+
+int lcd_putchar(char c, FILE* stream)
+{
+    if (c == '\n')
+    {
+        // Fill the rest of the line with spaces
+        for (; lcd_char_no < LCD_LINE_LENGTH - 1; lcd_char_no++)
+            lcd_command(1, ' ');
+
+        // Update the line number
+        lcd_set_line(lcd_line_no + 1 % LCD_LINE_COUNT);
+    }
+    else
+    {
+        lcd_command(1, c);
+        lcd_char_no++;
+    }
+
+    return 0;
 }
 
 FILE lcdFile = FDEV_SETUP_STREAM(lcd_putchar, NULL, _FDEV_SETUP_WRITE);
