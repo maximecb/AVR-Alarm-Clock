@@ -2,6 +2,7 @@
 #include "config.h"
 #include "lcd.h"
 #include <stdio.h>
+#include <stdbool.h>
 #include <util/delay.h>
 
 //=============================================================================
@@ -15,6 +16,9 @@
 
 void lcd_write4(uint8_t rs, uint8_t db)
 {
+    // Setup the data port for writing
+    INIT_LCD_DATA();
+
     LCD_RW(0);
 
     LCD_RS(rs);
@@ -22,15 +26,54 @@ void lcd_write4(uint8_t rs, uint8_t db)
     LCD_DATA(db);
 
     LCD_E(1);
-    _delay_us(100);
+    _delay_us(2);
     LCD_E(0);
-    _delay_us(100);
+    _delay_us(2);
 }
 
 void lcd_write8(uint8_t rs, uint8_t db)
 {
     lcd_write4(rs, db >> 4);
     lcd_write4(rs, db);
+}
+
+uint8_t lcd_read4(uint8_t rs)
+{
+    // Setup the data port for reading
+    INIT_LCD_DATA_IN();
+
+    LCD_RW(1);
+
+    LCD_RS(rs);
+
+    LCD_E(1);
+    _delay_us(2);
+
+    uint8_t data = LCD_DATA_IN();
+
+    LCD_E(0);
+    _delay_us(2);
+
+    return data;
+}
+
+uint8_t lcd_read8(uint8_t rs)
+{
+    return (lcd_read4(rs) << 4) | lcd_read4(rs);
+}
+
+bool lcd_busy()
+{
+    uint8_t byte = lcd_read8(0);
+    return (byte & 0b10000000)? true:false;
+}
+
+void lcd_command(uint8_t rs, uint8_t db)
+{
+    lcd_write8(rs, db);
+
+    // Wait for the command to complete
+    for (uint8_t i = 0; lcd_busy() == true && i != 0xFF; ++i);
 }
 
 void lcd_init()
@@ -45,26 +88,22 @@ void lcd_init()
     lcd_write4(0, 0x3);
     _delay_us(5);
     lcd_write4(0, 0x3);
-    _delay_us(1);
+    _delay_us(5);
     lcd_write4(0, 0x3);
-    _delay_us(1);
+    _delay_us(5);
 
     // Entry mode set: 4-bit mode
     lcd_write4(0, 0b0010);
-    _delay_ms(10);
+    _delay_us(50);
 
     // Function set: 2 line display and 5x8 font
-    lcd_write8(0, 0b00101000);
-    _delay_ms(2);
+    lcd_command(0, 0b00101000);
 
     // Display on/off control: display on, no cursor
-    lcd_write8(0, 0b00001100);
-    _delay_us(50);
+    lcd_command(0, 0b00001100);
 
     // Entry mode set
-    lcd_write4(0, 0b0000);
-    lcd_write4(0, 0b0110);
-    _delay_us(50);
+    lcd_command(0, 0b00000110);
 
     // Clear the LCD
     lcd_clear();
@@ -72,9 +111,8 @@ void lcd_init()
 
 void lcd_clear()
 {
-    // Clear display
-    lcd_write8(0, 0b00000001);
-    _delay_ms(2);
+    // Clear the display
+    lcd_command(0, 0b00000001);
 }
 
 int lcd_line_no = 0;
@@ -98,7 +136,7 @@ void lcd_set_line(int lineNo)
     lcd_line_no = lineNo;
 
     // Set the cursor position (DDRAM address)
-    lcd_write8(0, 128 + address);
+    lcd_command(0, 128 + address);
 }
 
 int lcd_putchar(char c, FILE* stream)
@@ -112,10 +150,27 @@ int lcd_putchar(char c, FILE* stream)
     }
     else
     {
-        lcd_write8(1, c);
+        lcd_command(1, c);
     }
 
     return 0;
+}
+
+bool lcd_ping()
+{
+    // Read the address counter
+    uint8_t ac1 = lcd_read8(0) & 0b01111111;
+
+    // Move the cursor right
+    lcd_command(0, 0x14);
+
+    // Read the address counter
+    uint8_t ac2 = lcd_read8(0) & 0b01111111;
+
+    // Move the cursor left
+    lcd_command(0, 0x10);
+
+    return (ac2 == ac1 + 1);
 }
 
 FILE lcdFile = FDEV_SETUP_STREAM(lcd_putchar, NULL, _FDEV_SETUP_WRITE);

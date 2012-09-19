@@ -403,6 +403,10 @@ int main(void)
     // For each iteration
     for (;;)
     {
+        // If the LCD is not responding, reset it
+        if (lcd_ping() == false)
+            lcd_init();
+
         //lcd_clear();
         lcd_set_line(0);
 
@@ -429,12 +433,15 @@ int main(void)
             // Ring the alarm
             OUT_BUZZER(secCount % 2);
 
-            // If any key is pressed, or one hour has elapsed,
-            // move the alarm time to tomorrow
-            if (keys || alarmTime.hour != curTime.hour)
+            // If any key is pressed, or one hour has elapsed
+            if (keys != 0 || alarmTime.hour != curTime.hour)
             {
+                // Move the alarm time to tomorrow
                 setAlarmDate();
                 OUT_BUZZER(0);
+
+                // Don't let this key trigger any other action
+                keys = 0;
             }
         }
 

@@ -2,13 +2,20 @@ TODO: battery as add-on
 
 
 
-TODO: program function to probe LCD for response
+
+
+
+[DONE] TODO: program function to probe LCD for response
   bool lcd_ping()
+    Check busy flag
+    - If stuck on, return false
+    Move cursor left
+    Check busy flag immediately
+    Move cursor right
 - If wrong response, re-init
 - Can run every iteration
 
-
-
+[DONE] TODO: lcd_busy() function to read the busy flag
 
 [DONE] TODO: setup buzzer, alarm-on LED
 - KISS, no relay for now
