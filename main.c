@@ -44,6 +44,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <avr/eeprom.h>
 #include <util/delay.h>
 #include "i2cmaster.h"
 #include "utility.h"
@@ -99,6 +100,16 @@ typedef enum setstate_t
 
 } EditState;
 
+typedef struct alarmcfg_t
+{
+    // Alarm time
+    TimeVal alarmTime;
+
+    // Alarm on/off flag
+    bool alarmOn;
+
+} AlarmCfg;
+
 // Current view
 ViewState viewState = VIEW_MAIN;
 
@@ -108,24 +119,46 @@ EditState editState = EDIT_NONE;
 // Index of the digit for the current edit
 int8_t digitIdx = 0;
 
-// Alarm time
-TimeVal alarmTime;
+// Second count, used for basic timing functions
+uint32_t secCount = 0;
 
 // Current time
 TimeVal curTime;
 
-// Alarm on/off flag
-bool alarmOn = false;
+// Alarm configuration object
+AlarmCfg cfg;
 
-// Second count, used for basic timing functions
-uint32_t secCount = 0;
+// Saved (EEPROM) alarm configuration
+AlarmCfg EEMEM savedCfg;
 
-void setState(ViewState vs, EditState es)
+/**
+Load the alarm config from EEPROM
+*/
+void loadAlarmCfg()
 {
-    lcd_clear();
-    viewState = vs;
-    editState = es;
-    digitIdx = 0;
+    // Read the config from EEPROM
+    eeprom_read_block((void*)&cfg, (const void*)&savedCfg, sizeof(cfg));
+
+    // If the current configuration is invalid, re-initialize it
+    if (cfg.alarmTime.month < 1 || cfg.alarmTime.month > 12)
+    {
+        cfg.alarmTime.year  = 0;
+        cfg.alarmTime.month = 1;
+        cfg.alarmTime.date  = 1;
+        cfg.alarmTime.hour  = 8;
+        cfg.alarmTime.min   = 0;
+        cfg.alarmTime.sec   = 0;
+        cfg.alarmOn = false;
+    }
+}
+
+/**
+Sve the current alarm config to EEPROM
+*/
+void saveAlarmCfg()
+{
+    // Write/update the config in EEPROM
+    eeprom_update_block((const void*)&cfg, (void*)&savedCfg, sizeof(cfg));
 }
 
 /**
@@ -133,14 +166,25 @@ Compute the date for the next alarm
 */
 void setAlarmDate()
 {
-    alarmTime.year  = curTime.year;
-    alarmTime.month = curTime.month;
-    alarmTime.date  = curTime.date;
+    cfg.alarmTime.year  = curTime.year;
+    cfg.alarmTime.month = curTime.month;
+    cfg.alarmTime.date  = curTime.date;
 
     // If the alarm is not past the current time,
     // move the alarm time to tomorrow
-    if (cmpTime(&alarmTime, &curTime) <= 0)
-        nextDate(&alarmTime);
+    if (cmpTime(&cfg.alarmTime, &curTime) <= 0)
+        nextDate(&cfg.alarmTime);
+}
+
+/**
+Set the current menu view and edit state
+*/
+void setState(ViewState vs, EditState es)
+{
+    lcd_clear();
+    viewState = vs;
+    editState = es;
+    digitIdx = 0;
 }
 
 void printTime(TimeVal* pTime, bool showDate)
@@ -349,7 +393,7 @@ void mainView(uint16_t keys)
     // Print the current time
     printTime(&curTime, true);
     
-    fprintf(lcd, "Alarm %s\n", alarmOn? "ON ":"OFF");
+    fprintf(lcd, "Alarm %s\n", cfg.alarmOn? "ON ":"OFF");
 
     switch (secCount / 4 % 3)
     {
@@ -360,8 +404,12 @@ void mainView(uint16_t keys)
 
     if (keys & KEY_A)
     {
-        alarmOn = !alarmOn;
+        // Toggle the alarm on flag
+        cfg.alarmOn = !cfg.alarmOn;
+
+        // Set the alarm date and save the alarm config
         setAlarmDate();
+        saveAlarmCfg();
     }
 
     if (keys & KEY_B)
@@ -376,7 +424,7 @@ void alarmView(uint16_t keys)
     fprintf(lcd, "Set Alarm Time\n");
 
     // Print the alarm time, without the date
-    printTime(&alarmTime, false);
+    printTime(&cfg.alarmTime, false);
 
     fprintf(lcd, "\n");
 
@@ -388,11 +436,15 @@ void alarmView(uint16_t keys)
     }
 
     // Edit the time, but not the date
-    bool changed = editTime(&alarmTime, false, keys);
+    bool changed = editTime(&cfg.alarmTime, false, keys);
 
-    // If the alarm time was changed, set the alarm date
+    // If the alarm time was changed
     if (changed == true)
+    {
+        // Set the alarm date and save the alarm config
         setAlarmDate();
+        saveAlarmCfg();
+    }
 
     // Return to menu key
     if (keys & KEY_SHARP)
@@ -438,6 +490,11 @@ int main(void)
     // Initialize the LCD
     lcd_init();
 
+    // Load the alarm config from EEPROM
+    loadAlarmCfg();
+    getTime(&curTime);
+    setAlarmDate();
+
     // For each iteration
     for (;;)
     {
@@ -466,13 +523,13 @@ int main(void)
             secCount++;
 
         // If the current time is past the alarm time
-        if (alarmOn == true && cmpTime(&curTime, &alarmTime) > 0)
+        if (cfg.alarmOn == true && cmpTime(&curTime, &cfg.alarmTime) > 0)
         {
             // Ring the alarm
             OUT_BUZZER(secCount % 2);
 
             // If any key is pressed, or one hour has elapsed
-            if (keys != 0 || alarmTime.hour != curTime.hour)
+            if (keys != 0 || cfg.alarmTime.hour != curTime.hour)
             {
                 // Move the alarm time to tomorrow
                 setAlarmDate();
@@ -484,7 +541,7 @@ int main(void)
         }
 
         // Indicate the alarm status with the alarm led
-        OUT_LED_ALARM(alarmOn? 1:0);
+        OUT_LED_ALARM(cfg.alarmOn? 1:0);
 
         // Switch on the view state
         switch (viewState)
