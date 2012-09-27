@@ -11,9 +11,11 @@ TARGET = avr
 
 all: flash
 
-# External crystal/resonator high-freq, startup time 256CK + 64ms
+# External crystal/resonator high-freq, startup time 258CK + 64ms
+# Preserve EEPROM through chip erase cycle
 fuse:
-	sudo avrdude -c $(PROGRAMMER) -p $(MCU) -U lfuse:w:0xde:m -U hfuse:w:0x99:m -U efuse:w:0xff:m
+#	sudo avrdude -c $(PROGRAMMER) -p $(MCU) -U lfuse:w:0xde:m -U hfuse:w:0x99:m -U efuse:w:0xff:m
+	sudo avrdude -c $(PROGRAMMER) -p $(MCU) -U lfuse:w:0xde:m -U hfuse:w:0x91:m -U efuse:w:0xff:m
 
 build:
 	avr-gcc $(CFLAGS) -mmcu=$(MCU) -c $(SRCS)

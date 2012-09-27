@@ -2,8 +2,9 @@ TODO: battery as add-on
 
 
 
+[DONE] TODO: flash LED while alarm is ringing
 
-
+[DONE] TODO: sound on keypress
 
 [DONE] TODO: save alarm time in EEPROM
 - Write on exit time menu or write on change?

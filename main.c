@@ -508,9 +508,17 @@ int main(void)
         // Read the keypad
         uint16_t keys = keypad_read();
 
-        // If a key was pressed, add a debouncing delay
+        // If a key was pressed
         if (keys)
-            _delay_ms(350);
+        {
+            // Make a short beeping sound
+            OUT_BUZZER(1);
+            _delay_ms(50);
+            OUT_BUZZER(0);
+
+            // Add a debouncing delay
+            _delay_ms(300);
+        }
 
         // Get the seconds value at the last iteration
         uint8_t lastSec = curTime.sec;
@@ -527,6 +535,7 @@ int main(void)
         {
             // Ring the alarm
             OUT_BUZZER(secCount % 2);
+            OUT_LED_ALARM(secCount % 2);
 
             // If any key is pressed, or one hour has elapsed
             if (keys != 0 || cfg.alarmTime.hour != curTime.hour)
@@ -539,9 +548,11 @@ int main(void)
                 keys = 0;
             }
         }
-
-        // Indicate the alarm status with the alarm led
-        OUT_LED_ALARM(cfg.alarmOn? 1:0);
+        else
+        {
+            // Indicate the alarm status with the alarm led
+            OUT_LED_ALARM(cfg.alarmOn? 1:0);
+        }
 
         // Switch on the view state
         switch (viewState)
