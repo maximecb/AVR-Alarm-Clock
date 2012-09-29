@@ -1,6 +1,22 @@
-TODO: battery as add-on
 
 
+
+
+
+
+
+
+[DONE] TODO: brightness auto-adjustment code
+
+[DONE] TODO: 10-bit ADC read code for light measurement
+
+[DONE] TODO: change pwm prescaler to clk/128 to prevent interference
+
+[DONE] TODO: fix LCD clearing bug on \n
+
+[DONE] TODO: light measurement circuit
+
+[DONE] TODO: PWM for brightness control
 
 [DONE] TODO: flash LED while alarm is ringing
 

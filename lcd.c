@@ -195,7 +195,7 @@ int lcd_putchar(char c, FILE* stream)
     if (c == '\n')
     {
         // Fill the rest of the line with spaces
-        for (; lcd_char_no < LCD_LINE_LENGTH - 1; lcd_char_no++)
+        for (; lcd_char_no < LCD_LINE_LENGTH; lcd_char_no++)
             lcd_command(1, ' ');
 
         // Update the line number

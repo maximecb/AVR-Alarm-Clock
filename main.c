@@ -75,6 +75,66 @@ void out_relay(uint8_t status)
 }
 
 //=============================================================================
+// ADC handling
+//=============================================================================
+
+void adc_init()
+{
+	// ADC enabled, prescaler 128
+	ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+
+	// AVCC reference, channel 0 (PF0)
+	ADMUX = (1 << REFS0) | 0;
+
+    // Set port F to input, no internal pull-up
+    PORTF = 0;
+    DDRF = 0;
+}
+
+uint16_t adc_read()
+{
+    // start single conversion
+	ADCSRA |= (1 << ADSC);
+
+    // wait until conversion is done
+	while ((ADCSRA & (1 << ADIF)) == 0);
+
+    // Most significant 8 bits in ADCH
+    // Least significant 2 bits in ADCL
+    uint16_t out = 0;
+    out |= (uint16_t)ADCL;
+    out |= ((uint16_t)ADCH & 3) << 8;
+    return out;
+}
+
+//=============================================================================
+// PWM handling
+//=============================================================================
+
+void pwm_init()
+{  
+    //
+    // Channel 0
+    //
+
+    TCCR0 = _BV(WGM01) |    // Fast PWM, 8-bit
+            _BV(WGM00) | 
+            _BV(COM01) |    // Clear on compare match
+            _BV(CS02);      // clk/64
+
+    // Enable OC0 / PB4 as output
+    DDRB = DDRB | _BV(DDB4);
+
+    // Set PWM value to 0
+    OCR0 = 0;
+}
+
+void pwm_brightness(uint8_t v)
+{
+    OCR0 = v;
+}
+
+//=============================================================================
 // Main function
 //=============================================================================
 
@@ -476,6 +536,35 @@ void timeView(uint16_t keys)
         setState(VIEW_MAIN, EDIT_NONE);
 }
 
+uint8_t curBrightness = 255;
+uint8_t targetBrightness = 255;
+
+void adjustBrightness()
+{
+    //fprintf(lcd, "adc: %d\n", (int)adc_read());
+    //fprintf(lcd, "bv: %d\n", (int)targetBrightness);
+
+    uint16_t lightVal = adc_read();
+
+    if (lightVal > 800)
+        targetBrightness = 255;
+    else if (lightVal > 600)
+        targetBrightness = 128;
+    else if (lightVal > 300)
+        targetBrightness = 80;
+    else if (lightVal > 100)
+        targetBrightness = 40;
+    else
+        targetBrightness = 20;
+
+    if (curBrightness < targetBrightness)
+        curBrightness += 1;
+    else if (curBrightness > targetBrightness)
+        curBrightness -= 1;
+
+    pwm_brightness(curBrightness);
+}
+
 int main(void)
 {
     // Initialize the outputs
@@ -489,6 +578,12 @@ int main(void)
 
     // Initialize the LCD
     lcd_init();
+
+    // Initialize the ADC
+    adc_init();
+
+    // Initialize PWM output
+    pwm_init();
 
     // Load the alarm config from EEPROM
     loadAlarmCfg();
@@ -504,6 +599,9 @@ int main(void)
 
         //lcd_clear();
         lcd_set_line(0);
+
+        // Adjust the LCD brightness
+        adjustBrightness();
 
         // Read the keypad
         uint16_t keys = keypad_read();
