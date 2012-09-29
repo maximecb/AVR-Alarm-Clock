@@ -1,0 +1,102 @@
+v 20110115 2
+C 48900 48900 1 270 0 pot-bourns.sym
+{
+T 49800 48100 5 10 0 0 270 0 1
+device=VARIABLE_RESISTOR
+T 49300 48300 5 10 1 1 270 0 1
+refdes=10K
+}
+C 46700 48500 1 0 0 5V-plus-1.sym
+C 48900 49700 1 0 0 gnd-1.sym
+C 48400 50000 1 0 0 mosfet-with-diode-1.sym
+{
+T 49300 50500 5 10 0 0 0 0 1
+device=NPN_TRANSISTOR
+T 49300 50500 5 10 1 1 0 0 1
+refdes=2N7000
+}
+C 46400 50400 1 0 0 terminal-1.sym
+{
+T 46710 51150 5 10 0 0 0 0 1
+device=terminal
+T 46710 51000 5 10 0 0 0 0 1
+footprint=CONNECTOR 1 1
+T 46650 50450 5 10 1 1 0 6 1
+refdes=PWM input
+}
+C 51600 47100 1 180 0 terminal-1.sym
+{
+T 51290 46350 5 10 0 0 180 0 1
+device=terminal
+T 51290 46500 5 10 0 0 180 0 1
+footprint=CONNECTOR 1 1
+T 51350 47050 5 10 1 1 180 6 1
+refdes=LCD Pin 1 (logic GND)
+}
+C 51600 47500 1 180 0 terminal-1.sym
+{
+T 51290 46750 5 10 0 0 180 0 1
+device=terminal
+T 51290 46900 5 10 0 0 180 0 1
+footprint=CONNECTOR 1 1
+T 51350 47450 5 10 1 1 180 6 1
+refdes=LCD Pin 2 (logic VCC)
+}
+C 51600 48500 1 180 0 terminal-1.sym
+{
+T 51290 47750 5 10 0 0 180 0 1
+device=terminal
+T 51290 47900 5 10 0 0 180 0 1
+footprint=CONNECTOR 1 1
+T 51350 48450 5 10 1 1 180 6 1
+refdes=LCD Pin 3 (contrast VO)
+}
+C 51600 50300 1 180 0 terminal-1.sym
+{
+T 51290 49550 5 10 0 0 180 0 1
+device=terminal
+T 51290 49700 5 10 0 0 180 0 1
+footprint=CONNECTOR 1 1
+T 51350 50250 5 10 1 1 180 6 1
+refdes=LCD Pin 15 (Backlight +)
+}
+C 51600 51100 1 180 0 terminal-1.sym
+{
+T 51290 50350 5 10 0 0 180 0 1
+device=terminal
+T 51290 50500 5 10 0 0 180 0 1
+footprint=CONNECTOR 1 1
+T 51350 51050 5 10 1 1 180 6 1
+refdes=LCD Pin 16 (Backlight -)
+}
+C 47100 47600 1 90 0 capacitor-1.sym
+{
+T 46400 47800 5 10 0 0 90 0 1
+device=CAPACITOR
+T 46600 47800 5 10 1 1 90 0 1
+refdes=1uF
+T 46200 47800 5 10 0 0 90 0 1
+symversion=0.1
+}
+C 47400 48500 1 270 0 capacitor-2.sym
+{
+T 48100 48300 5 10 0 0 270 0 1
+device=POLARIZED_CAPACITOR
+T 47900 48300 5 10 1 1 270 0 1
+refdes=100uF
+T 48300 48300 5 10 0 0 270 0 1
+symversion=0.1
+}
+N 49000 51000 50700 51000 4
+N 47300 50500 48400 50500 4
+N 49500 48400 50700 48400 4
+N 46900 48500 47600 48500 4
+N 46900 47600 47600 47600 4
+C 46800 47300 1 0 0 gnd-1.sym
+C 48900 47700 1 0 0 gnd-1.sym
+C 48800 48900 1 0 0 5V-plus-1.sym
+C 50500 47400 1 0 0 5V-plus-1.sym
+C 50600 46700 1 0 0 gnd-1.sym
+C 50500 50200 1 0 0 5V-plus-1.sym
+T 46800 49000 9 10 1 0 0 0 1
+Power Filter
